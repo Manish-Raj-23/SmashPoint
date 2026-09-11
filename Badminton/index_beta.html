@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmashPoint — Badminton Mixer Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: #151D30;
+      --bg-input: #1F2B48;
+      --accent: #00F59B;
+      --accent-dim: rgba(0, 245, 155, 0.15);
+      --accent-danger: #FF4766;
+      --accent-blue: #3B82F6;
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --border: #2B3A5C;
+      --gold: #FFD700;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-main);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, #FFF 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 900px) {
+      .container.tournament-active {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Buttons & Inputs */
+    .input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: white;
+      font-family: inherit;
+    }
+    input[type="text"]:focus { outline: 2px solid var(--accent); }
+    
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-primary { background: var(--accent); color: #052014; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-danger { background: rgba(255, 71, 102, 0.15); color: var(--accent-danger); border: 1px solid var(--accent-danger); }
+    .btn-danger:hover { background: var(--accent-danger); color: white; }
+    .btn-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+    .btn-blue:hover { background: var(--accent-blue); color: white; }
+
+    /* Tags */
+    .player-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .tag {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag span { cursor: pointer; font-weight: bold; }
+
+    /* Match List */
+    .match-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 650px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    .match-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .match-item.completed { border-color: var(--accent); background: rgba(0, 245, 155, 0.03); }
+    .match-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .vs-box { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .team { flex: 1; font-size: 0.95rem; font-weight: 600; }
+    .team.right { text-align: right; }
+    
+    .score-inputs { display: flex; align-items: center; gap: 0.5rem; }
+    .score-inputs input {
+      width: 48px; height: 38px; text-align: center;
+      background: var(--bg-main); border: 1px solid var(--border);
+      border-radius: 6px; color: white;
+      font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1rem;
+    }
+    .bench { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* Leaderboard */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 1rem; }
+    th, td { padding: 0.75rem 0.5rem; text-align: center; border-bottom: 1px solid var(--border); }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; }
+    tr:first-child td { color: var(--gold); font-weight: 700; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* History Section */
+    .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .history-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-info strong { display: block; color: var(--accent); margin-bottom: 0.2rem; }
+    .history-info span { font-size: 0.85rem; color: var(--text-muted); }
+    .history-actions { display: flex; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SMASHPOINT</h1>
+    <p>Dynamic Rotation Doubles Tournament Engine</p>
+  </header>
+
+  <div class="container" id="mainContainer">
+    
+    <!-- SETUP COLUMN -->
+    <div id="setupColumn">
+      <div class="card" id="setupCard">
+        <div class="card-title">Setup Roster</div>
+        <div class="input-group">
+          <input type="text" id="playerNameInput" placeholder="Enter player name..." />
+          <button class="btn-primary" onclick="addPlayer()">Add</button>
+        </div>
+        <div class="player-tags" id="rosterList"></div>
+        <div style="display:flex; gap: 0.5rem;">
+          <button class="btn-primary" id="startBtn" onclick="initTournament()" disabled>Start Tournament</button>
+          <button class="btn-secondary" onclick="loadSampleRoster()">LoadPlayers</button>
+        </div>
+      </div>
+
+      <!-- History Card -->
+      <div class="card" id="historyCard">
+        <div class="card-title">Tournament History</div>
+        <div class="history-list" id="historyList">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">No saved tournaments yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOURNAMENT COLUMN (Matches) -->
+    <div class="card" id="matchesCard" style="display:none;">
+      <div class="card-title">
+        <span>Court Schedule</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-secondary" style="padding: 0.4rem 0.8rem;" onclick="archiveTournament()">Save & End</button>
+          <button class="btn-danger" style="padding: 0.4rem 0.8rem;" onclick="discardTournament()">Discard</button>
+        </div>
+      </div>
+      <div class="match-list" id="matchContainer"></div>
+    </div>
+
+    <!-- TOURNAMENT COLUMN (Standings) -->
+    <div class="card" id="standingsCard" style="display:none;">
+      <div class="card-title">Live Leaderboard</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>P</th>
+            <th>W-L</th>
+            <th>Diff</th>
+            <th>PF</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody"></tbody>
+      </table>
+      <button class="btn-blue" style="width: 100%; margin-top: 0.5rem;" onclick="downloadCSV()">
+        📥 Download CSV Report
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    let players = [];
+    let matches = [];
+    let currentStats = []; // to hold leaderboard data for export
+
+    // On Load: Check if an active tournament exists, else load history
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedPlayers = localStorage.getItem('sp_players');
+      const savedMatches = localStorage.getItem('sp_matches');
+      
+      renderHistoryList();
+
+      if (savedPlayers && savedMatches && JSON.parse(savedPlayers).length > 0) {
+        players = JSON.parse(savedPlayers);
+        matches = JSON.parse(savedMatches);
+        renderTournament();
+      }
+    });
+
+    function saveState() {
+      localStorage.setItem('sp_players', JSON.stringify(players));
+      localStorage.setItem('sp_matches', JSON.stringify(matches));
+    }
+
+    // --- SETUP LOGIC ---
+    function addPlayer() {
+      const input = document.getElementById('playerNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+      if (players.length >= 12) return alert("Maximum 12 players allowed.");
+      if (players.includes(name)) return alert("Player already added!");
+      players.push(name);
+      input.value = '';
+      renderRoster();
+    }
+    
+    document.getElementById('playerNameInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addPlayer();
+    });
+
+    function removePlayer(idx) { players.splice(idx, 1); renderRoster(); }
+    
+    function loadSampleRoster() {
+      players = ["Manish", "Kireeti", "Pardeep", "Sathwik", "Rio", "Berlin", "Likith","Koushik"];
+      renderRoster();
+    }
+
+    function renderRoster() {
+      const list = document.getElementById('rosterList');
+      list.innerHTML = players.map((p, i) => `
+        <div class="tag">${p} <span onclick="removePlayer(${i})">&times;</span></div>
+      `).join('');
+      document.getElementById('startBtn').disabled = players.length < 4;
+    }
+
+    // --- ALGORITHM ---
+    function generateSchedule(roster) {
+      const n = roster.length;
+      let targetMatches = (n === 4) ? 3 : (n === 5) ? 5 : (n === 6) ? 15 : (n === 7) ? 7 : (n === 8) ? 14 : (n === 9) ? 18 : Math.floor((n * 4) / 4) * 2;
+      
+      let partnerCounts = {}, playCounts = {};
+      roster.forEach(p => {
+        playCounts[p] = 0; partnerCounts[p] = {};
+        roster.forEach(p2 => { if (p !== p2) partnerCounts[p][p2] = 0; });
+      });
+
+      let schedule = [];
+      for (let round = 0; round < targetMatches; round++) {
+        let sortedPlayers = [...roster].sort((a, b) => playCounts[a] !== playCounts[b] ? playCounts[a] - playCounts[b] : Math.random() - 0.5);
+        let activeFour = sortedPlayers.slice(0, 4);
+
+        const options = [
+          { t1: [activeFour[0], activeFour[1]], t2: [activeFour[2], activeFour[3]] },
+          { t1: [activeFour[0], activeFour[2]], t2: [activeFour[1], activeFour[3]] },
+          { t1: [activeFour[0], activeFour[3]], t2: [activeFour[1], activeFour[2]] }
+        ];
+
+        options.sort((a, b) => (partnerCounts[a.t1[0]][a.t1[1]] + partnerCounts[a.t2[0]][a.t2[1]]) - (partnerCounts[b.t1[0]][b.t1[1]] + partnerCounts[b.t2[0]][b.t2[1]]));
+        
+        let chosen = options[0];
+        activeFour.forEach(p => playCounts[p]++);
+        partnerCounts[chosen.t1[0]][chosen.t1[1]]++; partnerCounts[chosen.t1[1]][chosen.t1[0]]++;
+        partnerCounts[chosen.t2[0]][chosen.t2[1]]++; partnerCounts[chosen.t2[1]][chosen.t2[0]]++;
+
+        schedule.push({ id: round + 1, team1: chosen.t1, team2: chosen.t2, bench: roster.filter(p => !activeFour.includes(p)), score1: '', score2: '', completed: false });
+      }
+      return schedule;
+    }
+
+    // --- TOURNAMENT UI ---
+    function initTournament() {
+      matches = generateSchedule(players);
+      saveState();
+      renderTournament();
+    }
+
+    function renderTournament() {
+      document.getElementById('setupColumn').style.display = 'none';
+      document.getElementById('matchesCard').style.display = 'block';
+      document.getElementById('standingsCard').style.display = 'block';
+      document.getElementById('mainContainer').classList.add('tournament-active');
+      renderMatches();
+      updateStandings();
+    }
+
+    function renderMatches() {
+      const container = document.getElementById('matchContainer');
+      container.innerHTML = matches.map((m, idx) => `
+        <div class="match-item ${m.completed ? 'completed' : ''}">
+          <div class="match-header"><span>MATCH #${m.id}</span><span>${m.completed ? 'FINISHED' : 'PENDING'}</span></div>
+          <div class="vs-box">
+            <div class="team">${m.team1.join(' & ')}</div>
+            <div class="score-inputs">
+              <input type="number" min="0" value="${m.score1}" onchange="updateScore(${idx}, 1, this.value)" placeholder="0" />
+              <span>:</span>
+              <input type="number" min="0" value="${m.score2}" onchange="updateScore(${idx}, 2, this.value)" placeholder="0" />
+            </div>
+            <div class="team right">${m.team2.join(' & ')}</div>
+          </div>
+          ${m.bench.length > 0 ? `<div class="bench">Resting: ${m.bench.join(', ')}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function updateScore(idx, team, value) {
+      if (team === 1) matches[idx].score1 = value;
+      if (team === 2) matches[idx].score2 = value;
+      
+      matches[idx].completed = (matches[idx].score1 !== '' && matches[idx].score2 !== '');
+      saveState();
+      renderMatches();
+      updateStandings();
+    }
+
+    function updateStandings() {
+      let stats = {};
+      players.forEach(p => stats[p] = { name: p, played: 0, wins: 0, losses: 0, pf: 0, pa: 0, diff: 0 });
+
+      matches.forEach(m => {
+        if (!m.completed) return;
+        const s1 = parseInt(m.score1), s2 = parseInt(m.score2);
+        
+        [ {team: m.team1, f: s1, a: s2}, {team: m.team2, f: s2, a: s1} ].forEach(group => {
+          group.team.forEach(p => {
+            stats[p].played++; stats[p].pf += group.f; stats[p].pa += group.a; stats[p].diff += (group.f - group.a);
+            if (group.f > group.a) stats[p].wins++; else if (group.f < group.a) stats[p].losses++;
+          });
+        });
+      });
+
+      currentStats = Object.values(stats).sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.diff !== a.diff) return b.diff - a.diff;
+        return b.pf - a.pf;
+      });
+
+      document.getElementById('standingsBody').innerHTML = currentStats.map(s => `
+        <tr>
+          <td>${s.name}</td><td class="mono">${s.played}</td>
+          <td class="mono">${s.wins}-${s.losses}</td>
+          <td class="mono">${s.diff > 0 ? '+'+s.diff : s.diff}</td><td class="mono">${s.pf}</td>
+        </tr>
+      `).join('');
+    }
+
+    // --- HISTORY & CSV EXPORT ---
+    function getHistory() { return JSON.parse(localStorage.getItem('sp_history') || '[]'); }
+
+    function archiveTournament() {
+      const hist = getHistory();
+      hist.push({
+        id: Date.now(),
+        date: new Date().toLocaleString(),
+        players: [...players],
+        matches: [...matches]
+      });
+      localStorage.setItem('sp_history', JSON.stringify(hist));
+      discardTournament(false); // Reset without prompt
+    }
+
+    function discardTournament(ask = true) {
+      if (ask && !confirm("Discard current tournament? Data will be lost.")) return;
+      players = []; matches = []; currentStats = [];
+      localStorage.removeItem('sp_players'); localStorage.removeItem('sp_matches');
+      location.reload();
+    }
+
+    function renderHistoryList() {
+      const hist = getHistory();
+      const list = document.getElementById('historyList');
+      if (hist.length === 0) return;
+
+      list.innerHTML = hist.slice().reverse().map(h => `
+        <div class="history-item">
+          <div class="history-info">
+            <strong>${h.players.length} Players</strong>
+            <span>${h.date}</span>
+          </div>
+          <div class="history-actions">
+            <button class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem" onclick="resumeTournament(${h.id})">View/Resume</button>
+            <button class="btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem" onclick="deleteHistory(${h.id})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function resumeTournament(id) {
+      if (players.length > 0 && !confirm("You have an active tournament. Overwrite it?")) return;
+      const hist = getHistory().find(h => h.id === id);
+      if (hist) {
+        players = hist.players; matches = hist.matches;
+        saveState(); renderTournament();
+      }
+    }
+
+    function deleteHistory(id) {
+      if (!confirm("Delete this saved tournament?")) return;
+      let hist = getHistory().filter(h => h.id !== id);
+      localStorage.setItem('sp_history', JSON.stringify(hist));
+      renderHistoryList();
+      if(hist.length === 0) document.getElementById('historyList').innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No saved tournaments yet.</p>`;
+    }
+
+    function downloadCSV() {
+      let csv = "SMASHPOINT TOURNAMENT REPORT\nDate: " + new Date().toLocaleString() + "\n\n";
+      
+      // 1. Leaderboard
+      csv += "--- FINAL STANDINGS ---\n";
+      csv += "Rank,Player,Matches Played,Wins,Losses,Point Differential,Total Points Scored\n";
+      currentStats.forEach((s, i) => {
+        csv += `${i+1},"${s.name}",${s.played},${s.wins},${s.losses},${s.diff},${s.pf}\n`;
+      });
+
+      // 2. Scorecard
+      csv += "\n--- MATCH SCORECARD ---\n";
+      csv += "Match,Team 1,Score 1,Score 2,Team 2,Status\n";
+      matches.forEach(m => {
+        let t1 = m.team1.join(' & ');
+        let t2 = m.team2.join(' & ');
+        let status = m.completed ? "Completed" : "Pending";
+        let s1 = m.score1 || "0";
+        let s2 = m.score2 || "0";
+        csv += `${m.id},"${t1}",${s1},${s2},"${t2}",${status}\n`;
+      });
+
+      // Create Blob & Trigger Download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `smashpoint_results_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
